@@ -9,7 +9,7 @@ import subprocess
 
 
 user = getpass.getuser()
-vms = "/Users/" + user + "/Documents/Virtual Machines.localized/"
+vms = "/Volumes/MacHDD/Virtual Machines/"
 VMPATH = 4
 
 class VMrun:
@@ -56,21 +56,21 @@ def vmForNumber(number):
   vmlist = [vm for vm in os.listdir(vms) if vm[0] != "."]
   try:
     title = string.rstrip(vmlist[number], ".vmwarevm")
-    path = os.path.join(vms, vmlist[number], title + ".vmx")
+    path = os.path.join(vms, vmlist[number])
     return {"title": title, "path": path}
   except:
     print str(args.target) + " does not specify a virtual machine."
     sys.exit(1)
-  
+
 def unpauseVm(args):
   target = vmForNumber(args.target)
-  
+
   print "Playing " + str(args.target) + ":" + target["title"] + ":" + target["path"]
   print VMrun.unpause(target["path"])
 
 def pauseVm(args):
   target = vmForNumber(args.target)
-  
+
   print "Pausing " + str(args.target) + ":" + target["title"] + ":" + target["path"]
   print VMrun.pause(target["path"])
 
@@ -80,19 +80,26 @@ def runVm(args):
   print "Running " + str(args.target) + ":" + target["title"] + ":" + target["path"]
   print VMrun.start(target["path"])
 
+def stopVm(args):
+  target = vmForNumber(args.target)
+
+  print "Stop " + str(args.target) + ":" + target["title"] + ":" + target["path"]
+  print VMrun.stop(target["path"], args.hard)
+
 def sshVm(args):
   target = vmForNumber(args.target)
   ip = VMrun.guestip(target["path"])
   print "Connecting to " + str(args.target) + ":" + target["title"] + " " + str(ip)
   os.execlp("ssh", "ssh", ip.strip())
 
-def printVms(args):
+def listVm(args):
   vmlist = [string.rstrip(vm, ".vmwarevm") for vm in os.listdir(vms) if vm[0] != "."]
   running = VMrun.list()
   i = 0
   print "=== Virtual Machines ==="
   for vm in vmlist:
     print str(i) + ": " + vm
+    i+=1
   print
   print "=== Running Machines ==="
   print running
@@ -101,11 +108,16 @@ parser = argparse.ArgumentParser(description='Control VMware virtual machines.')
 subparsers = parser.add_subparsers()
 
 listparse = subparsers.add_parser("list")
-listparse.set_defaults(func=printVms)
+listparse.set_defaults(func=listVm)
 
 vmrunparse = subparsers.add_parser("run")
 vmrunparse.add_argument("-t", "--target", type=int, help="the target virtual machine", default=0)
 vmrunparse.set_defaults(func=runVm)
+
+vmstopparse = subparsers.add_parser("stop")
+vmstopparse.add_argument("-t", "--target", type=int, help="the target virtual machine", default=0)
+vmstopparse.add_argument("--hard", action="store_true", help="hard stop virtual machine", default=False)
+vmstopparse.set_defaults(func=stopVm)
 
 vmpauseparse = subparsers.add_parser("pause")
 vmpauseparse.add_argument("-t", "--target", type=int, help="the target virtual machine", default=0)
